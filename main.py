@@ -4,8 +4,8 @@ import argparse
 
 import cv2
 import tqdm
-import darknet
 import numpy as np
+from ultralytics import YOLO
 
 
 class MCAnalyser():
@@ -15,16 +15,11 @@ class MCAnalyser():
         store_predicted_images
     ):
         # Load the object detection model
-        self.model = darknet.load_network(
-            cfg_path,
-            model_path,
-            batch_size=1)
+        self.model = YOLO(model_path)
 
         # Load network parameters
         self.score_thresh = score_thresh
         self.count_thresh = count_thresh
-        self.width = darknet.network_width(self.model)
-        self.height = darknet.network_height(self.model)
 
         # Record the depth of the MC stack
         self.num_slices = None
@@ -76,37 +71,25 @@ class MCAnalyser():
         image = cv2.cvtColor(lab_enhanced, cv2.COLOR_LAB2BGR)
         # ---- DONE ----
 
-        # Resize and normalize the image
-        image = cv2.resize(image, (self.width, self.height))
 
         # Return the preprocessed image as byte data
-        return image.tobytes(), image_height, image_width
+        return image
 
     def _detect_image(self, image_path):
         '''
         Perform object detection inference for a sigle image
         '''
-        # Read and preprocess the input image
-        image, image_height, image_width = self._preprocess_image(image_path)
 
         # Perform forward pass
-        darknet_image = darknet.make_image(self.width, self.height, 3)
-        darknet.copy_image_from_bytes(darknet_image, image)
-        detections = darknet.detect_image(
-            self.model, darknet_image, thresh=self.score_thresh)
-        darknet.free_image(darknet_image)
+        results = self.model(image_path, conf=self.score_thresh)[0]
 
-        # Extract the bounding box co-ordinates
         image_boxes = []
-        for box in detections:
-            x_min = int(((box[0] - (box[2] / 2)) / self.width) * image_width)
-            y_min = int(((box[1] - (box[3] / 2)) / self.height) * image_height)
-            x_max = int(((box[0] + (box[2] / 2)) / self.width) * image_width)
-            y_max = int(((box[1] + (box[3] / 2)) / self.height) * image_height)
-
-            image_boxes.append([x_min, y_min, x_max, y_max])
+        for box in results.boxes:
+            x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
+            image_boxes.append([int(x_min), int(y_min), int(x_max), int(y_max)])
 
         return image_boxes
+
 
     def _detect_stack(self, stack_path):
         '''
