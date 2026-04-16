@@ -120,7 +120,7 @@ class MCAnalyser():
 
         stack_boxes = {}
         for i, image_path in enumerate(stack_files):
-            if i < 1:   # 跳过第1层（index 0）
+            if i < 2:   # ignore the first 2 layers（index 0 & 1）to reduce False Positives
                 stack_boxes[image_path] = []
             else:
                 stack_boxes[image_path] = self._detect_image(image_path)
