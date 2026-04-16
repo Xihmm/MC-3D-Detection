@@ -62,6 +62,20 @@ class MCAnalyser():
         image_height, image_width, _ = image.shape
         self.slice_width, self.slice_height = image_width, image_height
 
+        # ---- MC Brightness Augmentation ----
+        # Convert to grayscale for CLAHE, then merge back to BGR
+        # In LAB colour space, the L channel corresponds to brightness (AB for colors), 
+        # so we apply CLAHE to it to enhance the brightness of the MCs
+        #clipLimit=2.0：the upper limit of contrast enhancement, the higher the stronger the enhancement but more noise, 2.0 is the classic starting value
+        #tileGridSize=(8,8)：divide the image into 8×8=64 small grids for separate processing, the smaller the grid the stronger the local effect but possible over-enhancement, 8×8 is the common value
+        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l_enhanced = clahe.apply(l)
+        lab_enhanced = cv2.merge([l_enhanced, a, b])
+        image = cv2.cvtColor(lab_enhanced, cv2.COLOR_LAB2BGR)
+        # ---- DONE ----
+
         # Resize and normalize the image
         image = cv2.resize(image, (self.width, self.height))
 
