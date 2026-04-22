@@ -76,13 +76,11 @@ class MCAnalyser():
         return image
 
     def _detect_image(self, image_path):
-        '''
-        Perform object detection inference for a sigle image
-        '''
-
-        # Perform forward pass
         results = self.model(image_path, conf=self.score_thresh)[0]
-
+        
+        # 设置图片尺寸（用原始图片的尺寸）
+        self.slice_height, self.slice_width = results.orig_shape
+        
         image_boxes = []
         for box in results.boxes:
             x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
