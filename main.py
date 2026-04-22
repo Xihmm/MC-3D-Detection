@@ -517,7 +517,7 @@ def parse_arguments():
     parser.add_argument(
         '--model_path',
         type=str,
-        default='rsc/yolov4-neurology-exp26_best.weights',
+        default='weights/best.pt',
         help='''
             ACTION: Strictly do not modify
             DESCRIPTION: Path to the object detection model to detect MCs''')
